@@ -1,0 +1,37 @@
+{
+  "name": "hyper-http",
+  "version": "0.0.2",
+  "description": "We present a simple HTTP server based on Node.js's 'http' library, which provides similar functionalities to the popular NestJs framework. Our goal is to make it easier to create and manipulate routes and middlewares in a more simplified manner.",
+  "main": "@hyper/index.js",
+  "types": "@hyper/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joaobezerradev/hyper-request.git"
+  },
+  "keywords": [
+    "api",
+    "http",
+    "node",
+    "middlewares",
+    "request",
+    "response"
+  ],
+  "author": "joaobezerradev",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/joaobezerradev/hyper-request/issues"
+  },
+  "homepage": "https://github.com/joaobezerradev/hyper-request#readme",
+  "devDependencies": {
+    "@types/node": "20.3.1",
+    "rimraf": "5.0.1",
+    "typescript": "5.0"
+  },
+  "dependencies": {
+    "ioredis": "5.3.2",
+    "reflect-metadata": "0.1.13"
+  }
+}
