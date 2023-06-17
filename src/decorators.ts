@@ -105,3 +105,12 @@ export function Cache (TTL: number): any {
     return descriptor
   }
 }
+
+export function BearerAuth() {
+  return function (target: Record<string, any>, propertyKey: string | symbol, parameterIndex: number): void {
+    const existingParameters: Array<{ index: number, name: string }> =
+      Reflect.getOwnMetadata('auth', target, propertyKey) || []
+    existingParameters.push({ index: parameterIndex, name: '__allAuthParams' })
+    Reflect.defineMetadata('auth', existingParameters, target, propertyKey)
+  }
+}

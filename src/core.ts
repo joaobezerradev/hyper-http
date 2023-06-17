@@ -5,9 +5,16 @@ import 'reflect-metadata'
 import cluster from 'node:cluster'
 import * as os from 'node:os'
 import { redis, type RouteDefinition } from './decorators'
+import { verify } from 'jsonwebtoken'
 
 export class HyperRequest {
   private readonly controllers: any[] = []
+
+  private readonly jwtSecret: string | undefined
+
+  constructor (jwtSecret?: string) {
+    this.jwtSecret = jwtSecret
+  }
 
   listen (port: number, callback?: () => void): void {
     const numCPUs = os.cpus().length
@@ -31,10 +38,10 @@ export class HyperRequest {
     this.controllers.push(controller)
   }
 
-  private async handleRequest (req: IncomingMessage, res: ServerResponse): Promise<void> {
+  private async handleRequest (req: any, res: ServerResponse): Promise<void> {
     try {
       const url = new URL(req.url || '', 'http://localhost')
-      const path = url.pathname
+      const pathSegments = url.pathname.split('/')
 
       for (const Controller of this.controllers) {
         const prefix = Reflect.getMetadata('prefix', Controller) as string
@@ -43,9 +50,58 @@ export class HyperRequest {
 
         for (const route of routes) {
           const fullPath = `/${prefix}/${route.path}`.replace(/\/\//g, '/')
-          if (req.method?.toLowerCase() === route.requestMethod && path === fullPath) {
+          const fullPathSegments = fullPath.split('/')
+
+          if (
+            req.method?.toLowerCase() === route.requestMethod &&
+            fullPathSegments.length === pathSegments.length &&
+            fullPathSegments.every((seg, i) => seg.startsWith(':') || seg === pathSegments[i])
+          ) {
             const params = await this.extractParams(req, fullPath)
+
+
+            // Match route parameters like :id
             if (params?.params) {
+              fullPathSegments.forEach((seg, i) => {
+                if (seg.startsWith(':')) {
+                  params!.params![seg.slice(1)!]! = pathSegments[i]
+                }
+              })
+            }
+
+            if (params?.params) {
+              // JWT logic
+              const authParams: Array<{ index: number, name: string }> = Reflect.getOwnMetadata('auth', Controller.prototype, route.methodName)
+              if (authParams) {
+                const bearerHeader = req.headers['authorization']
+                if (bearerHeader && bearerHeader.startsWith('Bearer ')) {
+                  const bearerTokenEncrypted = bearerHeader.split(' ')[1]
+                  try {
+                    if (!this.jwtSecret) {
+                      this.internalServerError(res)
+                      return
+                    }
+                    const decodedToken = verify(bearerTokenEncrypted, this.jwtSecret, { ignoreExpiration: true })
+                    req['auth'] = decodedToken
+                    // change this part
+                    authParams.forEach((param) => {
+                      // map each param index to corresponding property in decoded token
+                      if (param.name === '__allAuthParams') {
+                        params[param.index] = req['auth']
+                      } else {
+                        params[param.index] = req['auth'][param.name]
+                      }
+                    })
+                  } catch (error) {
+                    this.unauthorized(res)
+                    return
+                  }
+                } else {
+                  this.unauthorized(res)
+                  return
+                }
+              }
+
               const instance = new Controller()
               const cacheKey = `${fullPath}:${JSON.stringify(params.params)}`
               if (cachedMethods.includes(route.methodName)) {
@@ -81,12 +137,13 @@ export class HyperRequest {
     }
   }
 
-  private async extractParams (req: IncomingMessage, path: string): Promise<Record<string, Record<string, unknown> | null>> {
+  private async extractParams (req: IncomingMessage & any, path: string): Promise<Record<string, Record<string, unknown> | null>> {
     const url = new URL(req.url || '', 'http://localhost')
     const queryParams = parseQuery(url.search.substring(1))
 
     let body: any = {}
-    if (req.method !== 'get' && req.headers['content-type'] === 'application/json') {
+
+    if (req.method?.toLowerCase() !== 'get' && req.headers['content-type'] === 'application/json') {
       body = await this.getJsonBody(req)
     }
 
@@ -97,8 +154,14 @@ export class HyperRequest {
       body,
       params: routeParams,
       headers,
-      query: JSON.parse(JSON.stringify(queryParams)) // Serialize and deserialize to ensure a valid object
+      query: JSON.parse(JSON.stringify(queryParams)),
     }
+  }
+
+  private unauthorized (res: ServerResponse): void {
+    res.statusCode = 401
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify({ error: 'Unauthorized' }))
   }
 
   private notFound (res: ServerResponse): void {
@@ -130,6 +193,7 @@ export class HyperRequest {
     })
   }
 
+
   private matchRoute (route: string, url: string): Record<string, unknown> | null {
     const routeParts = route.split('/')
     const urlParts = url.split('/')
@@ -150,4 +214,6 @@ export class HyperRequest {
 
     return params
   }
+
+
 }
