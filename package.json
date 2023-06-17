@@ -1,11 +1,12 @@
 {
   "name": "hyper-http",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "We present a simple HTTP server framework using the native Node.js http module. It's designed to work with TypeScript decorators that you shared earlier. It's a simplified, lighter version of Express or Koa with a decorator-based approach like NestJS.",
   "main": "@hyper/index.js",
   "types": "@hyper/index.d.ts",
   "scripts": {
-    "build": "rimraf dist && tsc"
+    "build": "rimraf dist && tsc",
+    "start": "tsx src/api.ts"
   },
   "repository": {
     "type": "git",

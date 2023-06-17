@@ -43,10 +43,11 @@ export class HyperRequest {
       const url = new URL(req.url || '', 'http://localhost')
       const pathSegments = url.pathname.split('/')
 
-      for (const Controller of this.controllers) {
-        const prefix = Reflect.getMetadata('prefix', Controller) as string
-        const routes: RouteDefinition[] = Reflect.getMetadata('routes', Controller)
-        const cachedMethods: string[] = Reflect.getMetadata('cachedMethods', Controller) || []
+      console.log(`Processing ${req.method} request for ${req.url}`)
+      for (const controllerInstance of this.controllers) {
+        const prefix = Reflect.getMetadata('prefix', controllerInstance.constructor) as string
+       const routes: RouteDefinition[] = Reflect.getMetadata('routes', controllerInstance.constructor) || []
+        const cachedMethods: string[] = Reflect.getMetadata('cachedMethods', controllerInstance.constructor) || []
 
         for (const route of routes) {
           const fullPath = `/${prefix}/${route.path}`.replace(/\/\//g, '/')
@@ -71,7 +72,7 @@ export class HyperRequest {
 
             if (params?.params) {
               // JWT logic
-              const authParams: Array<{ index: number, name: string }> = Reflect.getOwnMetadata('auth', Controller.prototype, route.methodName)
+              const authParams: Array<{ index: number, name: string }> = Reflect.getOwnMetadata('auth', controllerInstance.constructor, route.methodName)
               if (authParams) {
                 const bearerHeader = req.headers['authorization']
                 if (bearerHeader && bearerHeader.startsWith('Bearer ')) {
@@ -102,10 +103,9 @@ export class HyperRequest {
                 }
               }
 
-              const instance = new Controller()
               const cacheKey = `${fullPath}:${JSON.stringify(params.params)}`
               if (cachedMethods.includes(route.methodName)) {
-                const TTL: number = Reflect.getMetadata('cacheTtl', instance, route.methodName)
+                const TTL: number = Reflect.getMetadata('cacheTtl', controllerInstance.constructor, route.methodName)
                 const cachedResult = await redis.get(cacheKey)
                 if (cachedResult) {
                   res.setHeader('X-Cache', 'HIT')
@@ -114,7 +114,7 @@ export class HyperRequest {
                   res.end(cachedResult)
                   return
                 } else {
-                  const result = await instance[route.methodName](...Object.values(params))
+                  const result = await controllerInstance[route.methodName](...Object.values(params))
                   await redis.set(cacheKey, JSON.stringify(result), 'EX', TTL)
                   res.setHeader('Content-Type', 'application/json')
                   res.end(JSON.stringify(result))
@@ -122,7 +122,7 @@ export class HyperRequest {
                 }
               }
 
-              const result = await instance[route.methodName](...Object.values(params))
+              const result = await controllerInstance[route.methodName](...Object.values(params))
               res.setHeader('Content-Type', 'application/json')
               res.end(JSON.stringify(result))
               return
