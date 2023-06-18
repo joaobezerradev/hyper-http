@@ -27,7 +27,7 @@ function createMethodDecorator (method: RouteDefinition['requestMethod']): (path
       const routes = Reflect.getMetadata('routes', target.constructor) as RouteDefinition[]
       const prefix: string = Reflect.getMetadata('prefix', target.constructor) || ''
 
-      const fullPath = `${prefix}/${path}`.replace(/\/\//g, '/')
+      const fullPath = `${prefix}/${path}`.replaceAll(/\/\//g, '/')
       routes.push({
         requestMethod: method,
         path: fullPath,

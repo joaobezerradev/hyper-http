@@ -2,7 +2,7 @@
   "compilerOptions": {
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "target": "ES2020",
+    "target": "ES2022",
     "outDir": "@hyper",
     "module": "CommonJS",
     "moduleResolution": "node",
