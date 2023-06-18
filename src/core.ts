@@ -50,7 +50,10 @@ export class HyperRequest {
         const cachedMethods: string[] = Reflect.getMetadata('cachedMethods', controllerInstance.constructor) || []
 
         for (const route of routes) {
-          const fullPath = `/${prefix}/${route.path}`.replaceAll(/\/\//g, '/')
+          let fullPath = `/${prefix}/${route.path}`.replaceAll(/\/\//g, '/')
+          if (route.path === '/') {
+            fullPath = fullPath.slice(0, -1);
+          }
           const fullPathSegments = fullPath.split('/')
           if (
             req.method?.toLowerCase() === route.requestMethod &&
