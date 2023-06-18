@@ -46,13 +46,12 @@ export class HyperRequest {
       console.log(`Processing ${req.method} request for ${req.url}`)
       for (const controllerInstance of this.controllers) {
         const prefix = Reflect.getMetadata('prefix', controllerInstance.constructor) as string
-       const routes: RouteDefinition[] = Reflect.getMetadata('routes', controllerInstance.constructor) || []
+        const routes: RouteDefinition[] = Reflect.getMetadata('routes', controllerInstance.constructor) || []
         const cachedMethods: string[] = Reflect.getMetadata('cachedMethods', controllerInstance.constructor) || []
 
         for (const route of routes) {
-          const fullPath = `/${prefix}/${route.path}`.replace(/\/\//g, '/')
+          const fullPath = `/${prefix}/${route.path}`.replace(/\/\//g, '/').replace(/\/\//g, '/')
           const fullPathSegments = fullPath.split('/')
-
           if (
             req.method?.toLowerCase() === route.requestMethod &&
             fullPathSegments.length === pathSegments.length &&
@@ -193,7 +192,6 @@ export class HyperRequest {
     })
   }
 
-
   private matchRoute (route: string, url: string): Record<string, unknown> | null {
     const routeParts = route.split('/')
     const urlParts = url.split('/')
@@ -214,6 +212,4 @@ export class HyperRequest {
 
     return params
   }
-
-
 }

@@ -9,7 +9,7 @@ export interface RouteDefinition {
 
 export function Controller (path?: string): ClassDecorator {
   return (target) => {
-    const normalizedPath = path || '' // Adiciona uma barra ("/") como padrão, caso nenhum caminho seja fornecido
+    const normalizedPath = path || ''
     Reflect.defineMetadata('prefix', normalizedPath, target)
     if (!Reflect.hasMetadata('routes', target)) {
       Reflect.defineMetadata('routes', [], target)
@@ -54,7 +54,7 @@ export function Body () {
   }
 }
 
-export function Param (): any {
+export function Params (): any {
   return function (target: Record<string, any>, propertyKey: string | symbol, parameterIndex: number): void {
     const existingParameters: Array<{ index: number, name: string }> =
       Reflect.getOwnMetadata('params', target, propertyKey) || []
@@ -106,7 +106,7 @@ export function Cache (TTL: number): any {
   }
 }
 
-export function BearerAuth() {
+export function BearerAuth () {
   return function (target: Record<string, any>, propertyKey: string | symbol, parameterIndex: number): void {
     const existingParameters: Array<{ index: number, name: string }> =
       Reflect.getOwnMetadata('auth', target, propertyKey) || []
