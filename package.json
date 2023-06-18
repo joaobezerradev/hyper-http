@@ -5,8 +5,7 @@
   "main": "@hyper/index.js",
   "types": "@hyper/index.d.ts",
   "scripts": {
-    "build": "rimraf dist && tsc",
-    "start": "tsx src/api.ts"
+    "build": "rimraf dist && tsc"
   },
   "repository": {
     "type": "git",
